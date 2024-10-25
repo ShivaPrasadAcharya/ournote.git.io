@@ -1,350 +1,373 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { PlusCircle, Search, ChevronDown, ChevronUp, Trash2, Edit2, Save, X, Pin, Filter } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { PlusCircle, Search, ChevronDown, ChevronUp, Trash2, Edit2, X, Pin, Copy } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const DEFAULT_NOTES = [
-  {
-    id: 1,
-    title: "Welcome to Notes App",
-    subtitle: "Getting Started Guide",
-    content: "Welcome to your new notes application! This is a default note to help you get started. Pin important notes, use the search feature, and organize your thoughts easily.",
-    createdAt: new Date().toLocaleString(),
-    lastEdited: new Date().toLocaleString(),
-    color: "#f0f9ff",
-    isPinned: true
-  },
-  {
-    id: 2,
-    title: "Quick Tips",
-    subtitle: "Making the Most of Your Notes",
-    content: "1. Pin important notes to keep them at the top\n2. Use the search bar to find specific notes\n3. Add subtitles for better organization\n4. Click 'Read More' to expand long notes",
-    createdAt: new Date().toLocaleString(),
-    lastEdited: new Date().toLocaleString(),
-    color: "#f0fdf4",
-    isPinned: false
-  }
+// You can add manual notes here in this format
+const EXAMPLE_NOTES = [
+    {
+        id: new Date('2024-10-25 12:00:00').getTime(),
+        title: "Welcome Note",
+        subtitle: "Getting Started",
+        content: "Welcome to the Notes App! This is a simple notes application where you can create, edit, and organize your notes. You can pin important notes (up to 7) to keep them at the top. Feel free to add more notes below this example.",
+        createdAt: new Date('2024-10-25 12:00:00').toLocaleString(),
+        lastEdited: new Date('2024-10-25 12:00:00').toLocaleString(),
+        color: "hsl(200, 70%, 95%)",
+        isPinned: true
+    },
+    {
+        id: new Date('2024-10-25 12:05:00').getTime(),
+        title: "Meeting Notes",
+        subtitle: "Project Planning",
+        content: "Key points discussed:\n1. Project timeline review\n2. Resource allocation\n3. Budget considerations\n4. Next steps and action items",
+        createdAt: new Date('2024-10-25 12:05:00').toLocaleString(),
+        lastEdited: new Date('2024-10-25 12:05:00').toLocaleString(),
+        color: "hsl(150, 70%, 95%)",
+        isPinned: false
+    }
 ];
 
 const NotesApp = () => {
-  const [notes, setNotes] = useState([]);
-  const [title, setTitle] = useState('');
-  const [subtitle, setSubtitle] = useState('');
-  const [content, setContent] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [editingId, setEditingId] = useState(null);
-  const [showAlert, setShowAlert] = useState(false);
-  const [alertMessage, setAlertMessage] = useState('');
-  const [showInputForm, setShowInputForm] = useState(false);
-  const [expandedNotes, setExpandedNotes] = useState(new Set());
-  const [filterType, setFilterType] = useState('all');
-  
-  const titleInputRef = useRef(null);
-  const inputFormRef = useRef(null);
+    const [notes, setNotes] = useState([]);
+    const [title, setTitle] = useState('');
+    const [subtitle, setSubtitle] = useState('');
+    const [content, setContent] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [editingId, setEditingId] = useState(null);
+    const [notification, setNotification] = useState({ show: false, message: '', type: 'default' });
+    const [showInputForm, setShowInputForm] = useState(false);
+    const [expandedNotes, setExpandedNotes] = useState(new Set());
+    const [generatedCode, setGeneratedCode] = useState('');
 
-  useEffect(() => {
-    const savedNotes = localStorage.getItem('notes');
-    if (savedNotes) {
-      setNotes(JSON.parse(savedNotes));
-    } else {
-      setNotes(DEFAULT_NOTES);
-    }
-  }, []);
+    useEffect(() => {
+        const savedNotes = localStorage.getItem('notes');
+        if (savedNotes) {
+            setNotes(JSON.parse(savedNotes));
+        } else {
+            setNotes(EXAMPLE_NOTES);
+        }
+    }, []);
 
-  useEffect(() => {
-    localStorage.setItem('notes', JSON.stringify(notes));
-  }, [notes]);
+    useEffect(() => {
+        localStorage.setItem('notes', JSON.stringify(notes));
+    }, [notes]);
 
-  useEffect(() => {
-    if (editingId && inputFormRef.current) {
-      inputFormRef.current.scrollIntoView({ behavior: 'smooth' });
-      titleInputRef.current?.focus();
-    }
-  }, [editingId]);
+    useEffect(() => {
+        // Generate code whenever title, subtitle, or content changes
+        if (title || subtitle || content) {
+            const timestamp = new Date();
+            const noteObject = {
+                id: timestamp.getTime(),
+                title: title.trim(),
+                subtitle: subtitle.trim(),
+                content: content.trim(),
+                createdAt: timestamp.toLocaleString(),
+                lastEdited: timestamp.toLocaleString(),
+                color: `hsl(${Math.floor(Math.random() * 360)}, 70%, 95%)`,
+                isPinned: false
+            };
+            
+            setGeneratedCode(JSON.stringify(noteObject, null, 4));
+        } else {
+            setGeneratedCode('');
+        }
+    }, [title, subtitle, content]);
 
-  const showAlertMessage = (message, duration = 3000) => {
-    setAlertMessage(message);
-    setShowAlert(true);
-    setTimeout(() => setShowAlert(false), duration);
-  };
-
-  const getRandomPastelColor = () => {
-    const hue = Math.floor(Math.random() * 360);
-    return `hsl(${hue}, 70%, 97%)`;
-  };
-
-  const toggleNoteExpansion = (id) => {
-    const newExpanded = new Set(expandedNotes);
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id);
-    } else {
-      newExpanded.add(id);
-    }
-    setExpandedNotes(newExpanded);
-  };
-
-  const addNote = () => {
-    if (!title.trim() || !content.trim()) {
-      showAlertMessage('Please fill in both title and content!');
-      return;
-    }
-
-    const newNote = {
-      id: Date.now(),
-      title: title.trim(),
-      subtitle: subtitle.trim(),
-      content: content.trim(),
-      createdAt: new Date().toLocaleString(),
-      lastEdited: new Date().toLocaleString(),
-      color: getRandomPastelColor(),
-      isPinned: false
+    const showNotification = (message, type = 'default') => {
+        setNotification({ show: true, message, type });
+        setTimeout(() => setNotification({ show: false, message: '', type: 'default' }), 3000);
     };
 
-    setNotes([newNote, ...notes]);
-    clearForm();
-  };
+    const getRandomColor = () => {
+        const hue = Math.floor(Math.random() * 360);
+        return `hsl(${hue}, 70%, 95%)`;
+    };
 
-  const clearForm = () => {
-    setTitle('');
-    setSubtitle('');
-    setContent('');
-    setShowInputForm(false);
-    setEditingId(null);
-  };
+    const handleAddNote = () => {
+        if (!title.trim() || !content.trim()) {
+            showNotification('Please fill in both title and content!', 'error');
+            return;
+        }
 
-  const deleteNote = (id) => {
-    setNotes(notes.filter(note => note.id !== id));
-  };
-
-  const startEditing = (note) => {
-    setEditingId(note.id);
-    setTitle(note.title);
-    setSubtitle(note.subtitle);
-    setContent(note.content);
-    setShowInputForm(true);
-  };
-
-  const saveEdit = () => {
-    setNotes(notes.map(note => 
-      note.id === editingId 
-        ? { 
-            ...note, 
-            title: title.trim(), 
+        const timestamp = new Date();
+        const newNote = {
+            id: timestamp.getTime(),
+            title: title.trim(),
             subtitle: subtitle.trim(),
-            content: content.trim(), 
-            lastEdited: new Date().toLocaleString() 
-          }
-        : note
-    ));
-    clearForm();
-  };
+            content: content.trim(),
+            createdAt: timestamp.toLocaleString(),
+            lastEdited: timestamp.toLocaleString(),
+            color: getRandomColor(),
+            isPinned: false
+        };
 
-  const togglePin = (id) => {
-    const pinnedCount = notes.filter(note => note.isPinned).length;
-    const note = notes.find(n => n.id === id);
-    
-    if (!note.isPinned && pinnedCount >= 7) {
-      showAlertMessage('You can only pin up to 7 notes!');
-      return;
-    }
+        setNotes([newNote, ...notes]);
+        clearForm();
+        showNotification('Note added successfully');
+    };
 
-    setNotes(notes.map(note => 
-      note.id === id 
-        ? { ...note, isPinned: !note.isPinned }
-        : note
-    ));
-  };
+    const handleEditNote = () => {
+        const timestamp = new Date();
+        setNotes(notes.map(note => 
+            note.id === editingId 
+                ? {
+                    ...note,
+                    title: title.trim(),
+                    subtitle: subtitle.trim(),
+                    content: content.trim(),
+                    lastEdited: timestamp.toLocaleString()
+                  }
+                : note
+        ));
+        clearForm();
+        showNotification('Note updated successfully');
+    };
 
-  const truncateText = (text, maxLength = 150) => {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
-  };
+    const handleCopyCode = () => {
+        navigator.clipboard.writeText(generatedCode);
+        showNotification('Code copied to clipboard!');
+    };
 
-  const filterNotes = () => {
-    let filtered = notes;
+    const handleDeleteNote = (id) => {
+        setNotes(notes.filter(note => note.id !== id));
+        showNotification('Note deleted');
+    };
 
-    if (searchTerm) {
-      filtered = filtered.filter(note =>
-        note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        note.subtitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        note.content.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
+    const handlePinNote = (id) => {
+        const pinnedCount = notes.filter(note => note.isPinned).length;
+        const isCurrentlyPinned = notes.find(note => note.id === id)?.isPinned;
 
-    switch (filterType) {
-      case 'pinned':
-        filtered = filtered.filter(note => note.isPinned);
-        break;
-      case 'unpinned':
-        filtered = filtered.filter(note => !note.isPinned);
-        break;
-    }
+        if (!isCurrentlyPinned && pinnedCount >= 7) {
+            showNotification('Maximum 7 notes can be pinned!', 'error');
+            return;
+        }
 
-    return filtered.sort((a, b) => {
-      if (a.isPinned && !b.isPinned) return -1;
-      if (!a.isPinned && b.isPinned) return 1;
-      return new Date(b.createdAt) - new Date(a.createdAt);
-    });
-  };
+        setNotes(notes.map(note =>
+            note.id === id ? { ...note, isPinned: !note.isPinned } : note
+        ));
+    };
 
-  const renderNote = (note) => (
-    <Card 
-      key={note.id}
-      className="transform transition-all duration-200 hover:shadow-xl relative"
-      style={{ backgroundColor: note.color }}
-    >
-      {note.isPinned && (
-        <div className="absolute -top-2 -left-2 bg-blue-500 text-white rounded-full p-1 z-10">
-          <Pin className="w-4 h-4" />
+    const handleEditStart = (note) => {
+        setEditingId(note.id);
+        setTitle(note.title);
+        setSubtitle(note.subtitle || '');
+        setContent(note.content);
+        setShowInputForm(true);
+    };
+
+    const clearForm = () => {
+        setTitle('');
+        setSubtitle('');
+        setContent('');
+        setShowInputForm(false);
+        setEditingId(null);
+        setGeneratedCode('');
+    };
+
+    const toggleNoteExpansion = (id) => {
+        setExpandedNotes(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(id)) {
+                newSet.delete(id);
+            } else {
+                newSet.add(id);
+            }
+            return newSet;
+        });
+    };
+
+    const getFilteredNotes = () => {
+        let filtered = notes;
+        
+        if (searchTerm) {
+            const search = searchTerm.toLowerCase();
+            filtered = filtered.filter(note => 
+                note.title.toLowerCase().includes(search) ||
+                note.subtitle?.toLowerCase().includes(search) ||
+                note.content.toLowerCase().includes(search)
+            );
+        }
+
+        return filtered.sort((a, b) => {
+            if (a.isPinned && !b.isPinned) return -1;
+            if (!a.isPinned && b.isPinned) return 1;
+            return b.id - a.id; // Sort by timestamp
+        });
+    };
+
+    const formatTimestamp = (timestamp) => {
+        const date = new Date(timestamp);
+        return date.toLocaleString();
+    };
+
+    const renderNoteCard = (note) => (
+        <Card 
+            key={note.id}
+            className="transform transition-all duration-200 hover:shadow-lg relative"
+            style={{ backgroundColor: note.color }}
+        >
+            {note.isPinned && (
+                <div className="absolute -top-2 -left-2 bg-blue-500 text-white rounded-full p-1 z-10">
+                    <Pin className="w-4 h-4" />
+                </div>
+            )}
+            <CardContent className="p-4">
+                <div className="flex flex-col">
+                    <div className="flex justify-between items-start">
+                        <div className="flex-grow pr-4">
+                            <h3 className="font-semibold text-lg mb-1">{note.title}</h3>
+                            {note.subtitle && (
+                                <h4 className="text-sm text-gray-600 mb-2 underline decoration-gray-400">
+                                    {note.subtitle}
+                                </h4>
+                            )}
+                            <div className="text-gray-700 whitespace-pre-wrap">
+                                {expandedNotes.has(note.id) ? note.content : 
+                                    note.content.length > 150 ? `${note.content.slice(0, 150)}...` : note.content}
+                            </div>
+                            {note.content.length > 150 && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => toggleNoteExpansion(note.id)}
+                                    className="mt-2 text-blue-600 hover:text-blue-800"
+                                >
+                                    {expandedNotes.has(note.id) 
+                                        ? <><ChevronUp className="w-4 h-4 mr-1" /> Show Less</>
+                                        : <><ChevronDown className="w-4 h-4 mr-1" /> Read More</>}
+                                </Button>
+                            )}
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handlePinNote(note.id)}
+                                className={note.isPinned ? "text-blue-500" : "text-gray-500"}
+                            >
+                                <Pin className="w-4 h-4" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEditStart(note)}
+                            >
+                                <Edit2 className="w-4 h-4" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteNote(note.id)}
+                            >
+                                <Trash2 className="w-4 h-4 text-red-500" />
+                            </Button>
+                        </div>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-4">
+                        <div>Created: {formatTimestamp(note.id)}</div>
+                        {note.lastEdited !== note.createdAt && 
+                            <div>Last edited: {note.lastEdited}</div>
+                        }
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+
+    return (
+        <div className="max-w-4xl mx-auto p-4 space-y-6">
+            <Card className="bg-white shadow-lg">
+                <CardHeader className="relative border-b">
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="text-2xl font-bold">My Notes</CardTitle>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowInputForm(!showInputForm)}
+                            className="text-gray-600 hover:text-gray-900"
+                        >
+                            {showInputForm ? <X className="w-5 h-5" /> : <PlusCircle className="w-5 h-5" />}
+                        </Button>
+                    </div>
+                </CardHeader>
+                <CardContent className="space-y-6 p-6">
+                    <div className="flex gap-4">
+                        <div className="flex-grow">
+                            <Input
+                                placeholder="Search notes..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full"
+                                icon={<Search className="w-4 h-4" />}
+                            />
+                        </div>
+                    </div>
+
+                    {showInputForm && (
+                        <div className="space-y-4 p-6 bg-gray-50 rounded-lg shadow-inner">
+                            <Input
+                                placeholder="Note Title"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                className="w-full text-lg font-medium"
+                            />
+                            <Input
+                                placeholder="Subtitle (optional)"
+                                value={subtitle}
+                                onChange={(e) => setSubtitle(e.target.value)}
+                                className="w-full text-md"
+                            />
+                            <Textarea
+                                placeholder="Write your note here..."
+                                value={content}
+                                onChange={(e) => setContent(e.target.value)}
+                                className="w-full min-h-[150px] text-md"
+                            />
+                            {(title || subtitle || content) && (
+                                <div className="relative">
+                                    <Textarea
+                                        value={generatedCode}
+                                        readOnly
+                                        className="w-full min-h-[200px] font-mono text-sm bg-gray-100"
+                                    />
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleCopyCode}
+                                        className="absolute top-2 right-2"
+                                    >
+                                        <Copy className="w-4 h-4 mr-1" />
+                                        Copy
+                                    </Button>
+                                </div>
+                            )}
+                            <div className="flex justify-end gap-2">
+                                <Button variant="outline" onClick={clearForm}>
+                                    Cancel
+                                </Button>
+                                <Button onClick={editingId ? handleEditNote : handleAddNote}>
+                                    {editingId ? 'Save Changes' : 'Add Note'}
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {notification.show && (
+                        <Alert variant={notification.type === 'error' ? 'destructive' : 'default'}>
+                            <AlertDescription>{notification.message}</AlertDescription>
+                        </Alert>
+                    )}
+                    
+                    <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
+                        {getFilteredNotes().map(renderNoteCard)}
+                    </div>
+                </CardContent>
+            </Card>
         </div>
-      )}
-      <CardContent className="p-4">
-        <div className="flex flex-col">
-          <div className="flex justify-between items-start">
-            <div className="flex-grow pr-4">
-              <h3 className="font-semibold text-lg mb-1">{note.title}</h3>
-              {note.subtitle && (
-                <h4 className="text-sm text-gray-600 mb-2 underline decoration-gray-400">{note.subtitle}</h4>
-              )}
-              <div className="text-gray-700 whitespace-pre-wrap">
-                {expandedNotes.has(note.id) ? note.content : truncateText(note.content)}
-              </div>
-              {note.content.length > 150 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => toggleNoteExpansion(note.id)}
-                  className="mt-2 text-blue-600 hover:text-blue-800"
-                >
-                  {expandedNotes.has(note.id) 
-                    ? <><ChevronUp className="w-4 h-4 mr-1" /> Show Less</>
-                    : <><ChevronDown className="w-4 h-4 mr-1" /> Read More</>}
-                </Button>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => togglePin(note.id)}
-                className={note.isPinned ? "text-blue-500" : "text-gray-500"}
-              >
-                <Pin className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => startEditing(note)}
-              >
-                <Edit2 className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => deleteNote(note.id)}
-              >
-                <Trash2 className="w-4 h-4 text-red-500" />
-              </Button>
-            </div>
-          </div>
-          <div className="flex justify-between items-center mt-4 text-xs text-gray-500">
-            <span>Created: {note.createdAt}</span>
-            <span>Last edited: {note.lastEdited}</span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  return (
-    <div className="max-w-4xl mx-auto p-4 space-y-6">
-      <Card className="bg-white shadow-lg">
-        <CardHeader className="relative">
-          <CardTitle className="text-2xl font-bold text-center">My Notes</CardTitle>
-          <div className="absolute right-4 top-4 flex gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowInputForm(!showInputForm)}
-              className="text-gray-600 hover:text-gray-900"
-            >
-              {showInputForm ? <X className="w-5 h-5" /> : <PlusCircle className="w-5 h-5" />}
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-grow">
-              <Input
-                placeholder="Search notes..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full"
-                icon={<Search className="w-4 h-4" />}
-              />
-            </div>
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-[180px]">
-                <Filter className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Filter notes" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Notes</SelectItem>
-                <SelectItem value="pinned">Pinned Only</SelectItem>
-                <SelectItem value="unpinned">Unpinned Only</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {showInputForm && (
-            <div ref={inputFormRef} className="space-y-4 p-4 bg-gray-50 rounded-lg">
-              <Input
-                ref={titleInputRef}
-                placeholder="Note Title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full"
-              />
-              <Input
-                placeholder="Subtitle (optional)"
-                value={subtitle}
-                onChange={(e) => setSubtitle(e.target.value)}
-                className="w-full"
-              />
-              <Textarea
-                placeholder="Write your note here..."
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="w-full min-h-[100px]"
-              />
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={clearForm}>
-                  Cancel
-                </Button>
-                <Button onClick={editingId ? saveEdit : addNote}>
-                  {editingId ? 'Save Changes' : 'Add Note'}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {showAlert && (
-            <Alert variant="destructive">
-              <AlertDescription>{alertMessage}</AlertDescription>
-            </Alert>
-          )}
-
-          <div className="grid gap-4 mt-6">
-            {filterNotes().map(renderNote)}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+    );
 };
 
 export default NotesApp;
